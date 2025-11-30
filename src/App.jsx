@@ -1,5 +1,6 @@
 import React from 'react';
 import { MdHexagon } from 'react-icons/md';
+import Barrier from './components/Barrier';
 
 const App = () => {
 
@@ -81,8 +82,12 @@ const App = () => {
             <div className="md:col-span-2 relative flex items-center justify-center  overflow-hidden rounded">
 
               {/* Avtomobil rasmi taqlidi */}
-              <img className='border h-full w-full' src="" alt="" />
-
+              <div className='h-full w-full relative'>
+                <div className='absolute bottom-20 left-30'>
+                  <Barrier />
+                </div>
+                <img className='border h-full w-full' src="" alt="" />
+              </div>
               {/* Model Ma'lumotlari Bloki */}
               <div className="absolute top-1/2 right-4 transform -translate-y-1/2 text-right">
                 <h2 className="text-5xl font-extrabold text-white">INTEGRA</h2>
