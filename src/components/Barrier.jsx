@@ -1,69 +1,98 @@
-import React, { useState } from 'react';
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  forwardRef
+} from "react";
 
-const Barrier = () => {
-  // `isOpen` - shlagbaumning holatini (ochiq/yopiq) boshqaradi
-  const [isOpen, setIsOpen] = useState(false);
+const Barrier = forwardRef(({ out, setOut }, ref) => {
+  const viewerRef = useRef();
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  // Holatni o'zgartiruvchi funksiya
-  const toggleBarrier = () => {
-    setIsOpen(!isOpen);
+  const openBarrier = () => {
+    const viewer = viewerRef.current;
+    if (!viewer || isAnimating) return;
+
+    setIsAnimating(true);
+
+    viewer.timeScale = 1.0;
+    viewer.pause();
+    viewer.play({
+      repetitions: 1,
+      direction: "normal",
+    });
+
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 3000);
   };
 
-  // Tailwind CSS klasslari shlagbaumning holatiga qarab o'zgaradi:
-  // - `rotate-0` (yopiq holat)
-  // - `-rotate-45` (ochiq holat) - 45 daraja pastga egiladi
-  const barrierStyle = isOpen
-    ? 'transform -rotate-45 origin-top-left'
-    : 'transform rotate-0 origin-top-left';
+  // ---- App.jsx uchun tashqariga funksiyalar beriladi ----
+  useImperativeHandle(ref, () => ({
+    openBarrier
+  }));
+
+  // ---- API orqali KIRISH vaqtida avtomatik ochish ----
+  useEffect(() => {
+    // Faqat kiraverishda (out === false) va animatsiya ishlamayotganda
+    if (out === true ) {
+      fetch("https://682739736b7628c5290f890c.mockapi.io/cars")
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("API keldi:", data);
+          openBarrier();
+        })
+        .catch((error) => {
+          console.error("API xatolik:", error);
+        });
+    }
+    setTimeout(() => {
+      setOut(false)
+    }, 15000)
+  }, [out]);
+
+  // ---- Kamera sozlash ----
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    const handleLoad = () => {
+      viewer.cameraOrbit = "-35deg 75deg 100m";
+      viewer.cameraTarget = "3.2m 0m 0.7m";
+      console.log("Model yuklandi va kamera sozlandi.");
+    };
+
+    viewer.addEventListener("load", handleLoad);
+    return () => viewer.removeEventListener("load", handleLoad);
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center p-4">
-      
-      {/* Ochish/Yopish tugmasi */}
+    <div className="w-full p-4 relative">
+      {/* CHIQISHDA qo‘l bilan ochiladi */}
       <button
-        onClick={toggleBarrier}
-        className={`px-6 py-3 mb-10 text-lg font-semibold text-white rounded-lg shadow-lg transition duration-300 ease-in-out 
-          ${isOpen 
-            ? 'bg-red-600 hover:bg-red-700' 
-            : 'bg-green-600 hover:bg-green-700'
-          }`}
+        onClick={() => openBarrier()}
+        className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
       >
-        {isOpen ? "Shlagbaumni Yopish" : "Shlagbaumni Ochish"}
+        Manual Ochish (Chiqish)
       </button>
 
-      {/* Shlagbaum konteyneri */}
-      <div className="relative w-full max-w-lg h-24 ">
-        
-        {/* Shlagbaum turgan joy (masalan, yo'l) */}
-       
+      {/* Rejimni o‘zgartirish */}
+      <button
+        onClick={() => setOut(!out)}
+        className="bg-yellow-500 text-black px-4 py-2 rounded mb-4 ml-3"
+      >
+        OUT: {out ? "TRUE — Chiqish" : "FALSE — Kirish"}
+      </button>
 
-        {/* Shlagbaum tayanchi (ustuni) */}
-        <div className="absolute bottom-0 left-0 w-8 h-24 bg-gray-800 rounded-t-lg shadow-xl z-20">
-          {/* Tayanch tepasidagi chiroq */}
-          <div className={`w-4 h-4 rounded-full mx-auto mt-2 transition-colors duration-500 
-            ${isOpen ? 'bg-green-500 shadow-red-500/50' : 'bg-red-500 shadow-green-500/50 '}`}>
-          </div>
-        </div>
-
-        {/* Asosiy Shlagbaum paneli */}
-        <div 
-          className={`absolute bottom-10 left-5 w-64 h-3 bg-red-700 rounded-full shadow-2xl z-10 
-            transition-transform duration-700 ease-in-out ${barrierStyle}`}
-        >
-          {/* Oq/Qizil chiziqlar (estetika uchun) */}
-          <div className="flex h-full ">
-            <div className="w-1/6 h-full bg-white"></div>
-            <div className="w-1/6 h-full bg-red-500"></div>
-            <div className="w-1/6 h-full bg-white"></div>
-            <div className="w-1/6 h-full bg-red-500"></div>
-            <div className="w-1/6 h-full bg-white"></div>
-            <div className="w-1/6 h-full bg-red-500 rounded-r-full"></div>
-          </div>
-        </div>
-      </div>
-      
+      <model-viewer
+        ref={viewerRef}
+        src="/models/kk.glb"
+        animation-name="Low Poly Vehicle Barrier"
+        style={{ width: "700px", height: "400px" }}
+      ></model-viewer>
     </div>
   );
-};
+});
 
 export default Barrier;

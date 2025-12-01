@@ -1,10 +1,71 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MdHexagon } from 'react-icons/md';
 import Barrier from './components/Barrier';
+import Car from './components/Car';
+import Exitcar from './components/Exitcar';
+import toast, { Toaster } from 'react-hot-toast';
 
 const App = () => {
+  const [showPrice, setShowPrice] = useState(false);
+  const [showCar, setShowCar] = useState(true);
+  const [data, setData] = useState([]);
+  useEffect(() => {
+    fetch("https://682739736b7628c5290f890c.mockapi.io/cars")
+      .then((res) => res.json())
+      .then((car) => {
+        console.log(car);
+        setData(car);
+      })
+  }, []);
 
-  // --- I. DATA: Dashboard ma'lumotlari (Konstantalar) ---
+  const carRef = useRef(null);
+
+  const [out, setOut] = useState(true);
+  const barrierRef = useRef(null);
+
+  const handlePay = () => {
+    setOut(true); // chiqish holati
+    if (barrierRef.current) {
+      barrierRef.current.openBarrier(); // shlagboumni ochish
+    }
+    setExit(true); // mashina yuradi
+  };
+
+  useEffect(() => {
+    const car = carRef.current;
+    if (!car || out) return; // Faqat out false bo'lganda ishlaydi
+
+    // Mashinani harakatga tushuramiz
+    car.classList.add("animate-drive-exit");
+
+    // 4 sekunddan keyin STOP
+    const timer = setTimeout(() => {
+      car.style.animationPlayState = "paused";
+      setShowPrice(true);
+    }, 4000);
+
+    return () => clearTimeout(timer); // cleanup
+  }, [out]); // out o'zgarganida qayta ishga tushadi
+
+  const resumeExit = () => {
+    const car = carRef.current;
+    if (!car || out) return; // Faqat out false bo'lganda ishlaydi
+    toast.success('Tulandi');
+    // Mashina yana harakatga tushadi
+    setTimeout(() => {
+      car.style.animationPlayState = "running";
+    }, 4000);
+
+    // Shlagboumni ochish
+    if (barrierRef.current) {
+      barrierRef.current.openBarrier();
+    }
+    setTimeout(() => {
+      setShowCar(false);
+    }, 10000)
+  };
+
+
 
   const METRICS = [
     { label: 'Total Sales', value: '$26,433,856', color: 'text-red-600' },
@@ -14,27 +75,10 @@ const App = () => {
 
   const MODELS = ['INTEGRA', 'RDX', 'TLX', 'MDX'];
 
-  const YEAR_DATA = [
-    { year: 2020, width: '80%' },
-    { year: 2021, width: '100%' },
-    { year: 2022, width: '53.3%' },
-  ];
-  const MAX_COLOR_VALUE = 100;
-
-  const COLOR_SALES = [
-    { value: 92, color: 'bg-white', iconClass: 'border border-gray-400' },
-    { value: 76, color: 'bg-gray-500', iconClass: '' },
-    { value: 67, color: 'bg-green-500', iconClass: '' },
-    { value: 67, color: 'bg-red-600', iconClass: '' },
-    { value: 59, color: 'bg-blue-600', iconClass: '' },
-    { value: 59, color: 'bg-yellow-500', iconClass: '' },
-  ];
-
-  // --- II. ASOSIY RENDER QISMI (Barcha JSX) ---
-
   return (
     // Umumiy fon va konteyner
     <div className=" max-h-screen text-gray-100 p-0  font-sans">
+      <Toaster position='top-center' />
       <div className="w-full mx-auto bg-[#1e1e1e] min-h-screen  overflow-hidden">
 
         {/* A. Header Qismi (div) */}
@@ -79,20 +123,43 @@ const App = () => {
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 ">
 
             {/* O'rta: Integra Hero (Rasm) - 2 ustun egallaydi */}
-            <div className="md:col-span-2 relative flex items-center justify-center  overflow-hidden rounded">
+            <div className="md:col-span-2 relative flex items-center justify-between rounded ">
 
               {/* Avtomobil rasmi taqlidi */}
-              <div className='h-full w-full relative'>
-                <div className='absolute bottom-20 left-30'>
-                  <Barrier />
+              <div className='h-full w-[70%] relative overflow-hidden '>
+                <div className='w-full absolute bottom-6 left-20 z-40'>
+                  <Barrier ref={barrierRef} out={out} setOut={setOut} />
                 </div>
-                <img className='border h-full w-full' src="" alt="" />
+                {out ? (
+                  <div className='animate-drive absolute -bottom-20 -right-45 z-30'>
+                    <Car />
+                  </div>
+                ) : (
+                  showCar && (
+                    <div ref={carRef} className='animate-drive-exit absolute w-full h-full -top-50 -left-90 z-30 scale-30'>
+                      <Exitcar />
+                    </div>
+                  )
+                )}
+
+                <img
+                  className="object-cover object-[100%_100%] h-105 w-full"
+                  src="/parkovka.jpg"
+                  alt=""
+                />
               </div>
               {/* Model Ma'lumotlari Bloki */}
-              <div className="absolute top-1/2 right-4 transform -translate-y-1/2 text-right">
-                <h2 className="text-5xl font-extrabold text-white">INTEGRA</h2>
-                <p className="text-lg text-gray-300 mt-1">Premium Sport Compact</p>
-                <p className="text-md text-red-500 mt-2">$31,300*</p>
+              <div className="absolute backdrop-blur-[5px]  p-2 rounded-sm top-1/2 right-4 transform -translate-y-1/2 text-right">
+                <h2 className="text-5xl font-extrabold text-white">{data[0]?.name}</h2>
+                <p className="text-md mt-2"> {showPrice ? data[0]?.time : '0'}</p>
+                <p className="text-md text-red-500 mt-2">{showPrice ? data[0]?.price : '0'}$</p>
+                <button
+                  onClick={resumeExit}
+                  className="bg-[#111] text-white px-4 py-2 rounded mt-2 w-full border border-amber-50"
+                >
+                  Tulash
+                </button>
+
               </div>
             </div>
 
@@ -212,7 +279,7 @@ const App = () => {
         </div>
 
       </div>
-    </div>
+    </div >
   );
 };
 

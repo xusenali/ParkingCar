@@ -1,1 +1,51 @@
+@keyframes drive-car {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    60% {
+        transform: translate(-700px, -350px) scale(0.04);
+        opacity: 1;
+    }
+
+    80% {
+        transform: translate(-900px, -300px) scale(0.03);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translate(-2000px, -400px) scale(0.01);
+        opacity: 0;
+    }
+}
+
+.animate-drive {
+    animation: drive-car 20s linear;
+    animation-delay: 3.5s;
+}
+
+@keyframes exit-drive-car {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    60% {
+        transform: translate(700px, 350px) scale(1.3)
+    }
+
+    80% {
+        transform: translate(800px, 400px) scale(1.5);
+    }
+
+    100% {
+        transform: translate(1500px, 850px) scale(2);
+    }
+}
+
+.animate-drive-exit {
+    animation: exit-drive-car 10s linear;
+}
+
+
+
 @import "tailwindcss";
